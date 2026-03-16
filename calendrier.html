@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Calendrier Militant (Léger)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- FONTS --- */
+    @font-face {
+      font-family: 'Zalando';
+      src: url('https://fairemieuxbesancon.fr/wp-content/uploads/2025/12/ZalandoSans_SemiExpanded-Black.ttf') format('truetype');
+      font-weight: 900;
+      font-display: swap;
+    }
+
+    /* --- VARIABLES SIMPLIFIÉES --- */
+    :root {
+      --lfi-red: #F91616;
+      --lfi-purple: #7B13D6;
+      --lfi-yellow: #FFC700;
+      --lfi-green: #37BC53;
+      --lfi-blue: #2563EB;
+      --lfi-cyan: #06b6d4; /* Permanence */
+      --lfi-pink: #DB2777;
+      --lfi-brown: #78350F;
+      --lfi-peach: #FFDAB9;
+      --lfi-orange: #F97316;
+
+      --bg-page: #F3F4F6;
+      --bg-card: #FFFFFF;
+      --text-main: #111827;
+      --text-muted: #4B5563;
+      --border: #E5E7EB;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0; padding: 15px;
+      color: var(--text-main);
+      background-color: var(--bg-page); /* Fond uni gris clair, pas d'animation */
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- UI STRUCTURE (Pas de Glassmorphism) --- */
+    .container {
+      max-width: 1000px; margin: 0 auto; width: 100%;
+    }
+
+    /* Carte simple blanche solide */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* --- HEADER --- */
+    header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-bottom: 20px; background: white; padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .logo-area { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+    .phi-logo { 
+      height: 32px; width: 32px; background: var(--lfi-red); color: white; 
+      border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 18px; 
+    }
+    .nav-btn {
+      background: var(--bg-page); border: 1px solid var(--border); padding: 8px 12px;
+      border-radius: 8px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;
+    }
+
+    h2 {
+      font-family: 'Zalando', sans-serif; text-align: center; margin: 0 0 15px 0;
+      color: var(--lfi-purple); font-size: 24px; text-transform: uppercase;
+    }
+
+    /* --- STATS --- */
+    .stats {
+      display: flex; justify-content: space-around; background: #F9FAFB;
+      padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;
+    }
+    .stat-item { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .stat-val { color: var(--lfi-purple); font-weight: 900; font-size: 1.1em; margin-left: 5px; }
+
+    /* --- LEGENDE (Boutons filtres) --- */
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .pill {
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+      background: white; border: 1px solid #ddd; border-radius: 20px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer;
+    }
+    .pill.inactive { opacity: 0.5; background: #eee; text-decoration: line-through; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* --- GRILLE CALENDRIER --- */
+    .grid { 
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); /* Mobile first: 1 col */
+      gap: 15px; 
+    }
+    @media(min-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .day {
+      background: #FFFFFF; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .d-head {
+      font-weight: 800; font-size: 13px; text-align: center; 
+      border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--text-muted); text-transform: uppercase;
+    }
+
+    /* --- EVENEMENTS --- */
+    .ev {
+      display: block; padding: 10px; border-radius: 8px;
+      text-decoration: none; margin-bottom: 2px;
+      border-left: 4px solid rgba(0,0,0,0.2); /* Marqueur visuel solide */
+    }
+    .ev-t { font-weight: 800; font-size: 14px; display: block; line-height: 1.2; }
+    .ev-i { font-size: 12px; opacity: 0.95; display: block; margin-top: 3px; }
+
+    /* Couleurs optimisées (Contraste élevé) */
+    .fm-type-tractage { background: var(--lfi-red); color: white; }
+    .fm-type-phoning { background: var(--lfi-blue); color: white; }
+    .fm-type-reunion { background: var(--lfi-purple); color: white; }
+    .fm-type-event { background: var(--lfi-pink); color: white; }
+    .fm-type-info { background: var(--lfi-brown); color: white; }
+    .fm-type-porte { background: var(--lfi-yellow); color: black; border-left-color: rgba(0,0,0,0.1); }
+    .fm-type-cafe { background: var(--lfi-green); color: white; }
+    .fm-type-eventlfi { background: var(--lfi-peach); color: black; border-left-color: rgba(0,0,0,0.1); }
+    .fm-type-perm { background: var(--lfi-cyan); color: white; }
+    .fm-type-collage { background: var(--lfi-orange); color: white; }
+
+    /* --- MODAL (Simple, pas de blur) --- */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); /* Fond noir simple */
+      display: none; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .modal {
+      background: white; width: 95%; max-width: 500px;
+      padding: 20px; border-radius: 12px;
+      max-height: 90vh; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 15px;
+    }
+
+    /* Inputs solides */
+    input, textarea {
+      background: #fff; border: 1px solid #ccc; border-radius: 6px;
+      padding: 10px; font-size: 16px; width: 100%; display: block; margin-bottom: 10px;
+    }
+    
+    .btn {
+      display: block; width: 100%; padding: 12px; border-radius: 6px; border: none;
+      font-weight: 700; font-size: 14px; text-align: center; cursor: pointer;
+    }
+    .btn-primary { background: var(--lfi-purple); color: white; }
+    .btn-ghost { background: #eee; color: #333; }
+    
+    .item-inscrit { 
+      padding: 8px 0; border-bottom: 1px solid #eee; display: flex; 
+      justify-content: space-between; font-size: 14px; 
+    }
+    .del-btn { color: red; font-weight: bold; padding: 0 10px; cursor: pointer; }
+    
+    .loading-msg { text-align:center; padding: 20px; color:#666; font-style:italic; }
+
+    /* Badge Complet */
+    .badge-complet {
+      display: inline-block;
+      background: var(--lfi-red);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+      text-transform: uppercase;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <a href="/" class="logo-area">
+        <div class="phi-logo">φ</div>
+        <div style="font-weight:800; font-size:16px; line-height:1.1;">
+          <span style="color:var(--lfi-purple)">FAIRE MIEUX</span><br>
+          <span style="font-size:10px; color:#666;">BESANÇON</span>
+        </div>
+      </a>
+      <a href="/" class="nav-btn">Retour</a>
+    </header>
+
+    <div class="card">
+      <h2>Calendrier Actions</h2>
+      
+      <div class="stats">
+         <div class="stat-item">Actions : <span id="s-act" class="stat-val">0</span></div>
+         <div class="stat-item">Inscrits : <span id="s-ins" class="stat-val">0</span></div>
+      </div>
+      
+      <div id="legend" class="legend"></div>
+      
+      <div id="loading" class="loading-msg">Chargement des données...</div>
+      
+      <div id="grid" class="grid"></div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal-bg">
+    <div class="modal">
+       <div style="display:flex;justify-content:space-between;align-items:start;">
+          <h3 id="m-t" style="margin:0; color: var(--lfi-purple); font-size:18px;"></h3>
+          <button onclick="closeModal()" style="background:#eee; border:none; width:30px; height:30px; border-radius:50%; font-size:20px;">×</button>
+       </div>
+       
+       <div id="m-inf" style="background:#f9f9f9; padding:10px; border-radius:6px; font-size:14px; line-height:1.5;"></div>
+
+       <div style="border-top:1px solid #eee; padding-top:15px;">
+          <!-- Standard registration form -->
+          <div id="reg-form-standard">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">Je participe :</label>
+            <input id="r-nom" type="text" placeholder="Prénom et Nom">
+            <input id="r-tel" type="tel" placeholder="Téléphone">
+            <button id="r-btn" class="btn btn-primary">Valider</button>
+          </div>
+          <!-- Link to app for collage events -->
+          <div id="reg-collage-link" style="display:none; text-align:center; padding:15px; background:#FFF7ED; border:1px solid #FDBA74; border-radius:8px;">
+            <div style="font-size:14px; margin-bottom:10px;">📱 Inscris-toi sur l'app de collage</div>
+            <a id="collage-app-link" href="#" target="_blank" class="btn btn-primary" style="display:inline-block; background:#F97316; text-decoration:none;">
+              S'inscrire sur l'app →
+            </a>
+          </div>
+       </div>
+
+       <div style="background:#f0f9ff; padding:10px; border-radius:6px; border:1px solid #bae6fd;">
+          <div style="font-weight:bold; font-size:13px; margin-bottom:5px; color:#0369a1;">Déjà inscrits :</div>
+          <div id="m-lst"></div>
+       </div>
+
+       <div style="border-top:1px solid #eee; padding-top:10px;">
+         <div style="font-size:12px; color:#666; margin-bottom:5px;">Note interne :</div>
+         <textarea id="m-com" style="height:50px; font-size:13px;"></textarea>
+         <button id="b-sav" class="btn btn-ghost" style="padding:8px; font-size:12px;">Enregistrer note</button>
+       </div>
+       
+       <div style="display:flex; gap:5px;">
+         <a id="l-map" target="_blank" href="#" class="btn btn-ghost" style="font-size:12px;">Plan</a>
+         <a id="l-cal" target="_blank" href="#" class="btn btn-ghost" style="font-size:12px;">Google Agenda</a>
+       </div>
+    </div>
+  </div>
+
+  <script>
+    /* Pas de script de parallaxe ici ! */
+    
+    const URL_API = "https://script.google.com/macros/s/AKfycbzsJrZEo-DqTsa2HXu08217Bj6WIcUni8ZUSYvNtwiJSzfA2fStpsIa5DNTBObLeHqKKQ/exec";
+    const KEY = "FM_Besancon_2025_X4h9!";
+    
+    // Mapping Couleurs
+    const TYPES = [
+      {key:"tractage", label:"Tractage", col:"var(--lfi-red)"},
+      {key:"porte", label:"Porte à porte", col:"var(--lfi-yellow)"},
+      {key:"cafe", label:"Café tours", col:"var(--lfi-green)"},
+      {key:"phoning", label:"Phoning", col:"var(--lfi-blue)"},
+      {key:"perm", label:"Permanence", col:"var(--lfi-cyan)"},
+      {key:"collage", label:"Collage", col:"var(--lfi-orange)"},
+      {key:"reunion", label:"Réunion", col:"var(--lfi-purple)"},
+      {key:"Evenement autre", label:"Autre", col:"var(--lfi-pink)"},
+      {key:"eventlfi", label:"Event LFI", col:"var(--lfi-peach)"},
+      {key:"info", label:"Info", col:"var(--lfi-brown)"}
+    ];
+
+    let ACTIONS = [], PARTS = [], FILTERed_OUT = new Set(), CURR = null;
+
+    const TAG_JI = "[JI]"; // Tag pour exclure les actions Jeunes Insoumis
+
+    function isJIAction(e) {
+      return (e.commentaire || "").includes(TAG_JI);
+    }
+
+    function getTypeKey(t) {
+      t=(t||"").toLowerCase();
+      if(t.includes("tract")) return "tractage";
+      if(t.includes("porte")) return "porte";
+      if(t.includes("café") || t.includes("cafe")) return "cafe";
+      if(t.includes("phone")) return "phoning";
+      if(t.includes("permanence")) return "perm";
+      if(t.includes("collage")) return "collage";
+      if(t.includes("réunion")||t.includes("reunion")) return "reunion";
+      if(t.includes("lfi")) return "eventlfi";
+      if(t.includes("info")) return "info";
+      if(t.includes("evenement")) return "event";
+      return "tractage";
+    }
+
+    // Génération légende
+    const leg = document.getElementById("legend");
+    TYPES.forEach(t => {
+       const el = document.createElement("div");
+       el.className = "pill";
+       el.innerHTML = `<span class="dot" style="background:${t.col}"></span>${t.label}`;
+       el.onclick = () => {
+          if(FILTERed_OUT.has(t.key)) { FILTERed_OUT.delete(t.key); el.classList.remove("inactive"); }
+          else { FILTERed_OUT.add(t.key); el.classList.add("inactive"); }
+          render();
+       };
+       leg.appendChild(el);
+    });
+
+    // Utilitaires Date/Heure (inchangés)
+    function parseDateSecure(dateStr) {
+       if(!dateStr) return null;
+       if(dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(dateStr);
+       const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+       if(parts) return new Date(`${parts[3]}-${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}`);
+       const tryD = new Date(dateStr);
+       return isNaN(tryD.getTime()) ? null : tryD;
+    }
+    function cleanTime(t) {
+      if(!t) return "09:00";
+      t = String(t).toLowerCase().replace("h",":").replace(".",":").trim();
+      if(!t.includes(":")) t += ":00";
+      const parts = t.split(":");
+      return (parts[0]||"09").padStart(2,'0') + ":" + (parts[1]||"00").padStart(2,'0');
+    }
+    function formatDateFr(dateStr) {
+       const d = parseDateSecure(dateStr);
+       if(!d) return dateStr;
+       return d.toLocaleDateString("fr-FR", { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    // Rendu Grille
+    function render() {
+       document.getElementById("loading").style.display = "none";
+       const grid = document.getElementById("grid");
+       grid.innerHTML = "";
+       let cntAct=0, cntIns=0;
+       const start = new Date(); start.setHours(0,0,0,0);
+       
+       // On affiche 21 jours
+       for(let i=0; i<21; i++) {
+          const d = new Date(start); d.setDate(start.getDate()+i);
+          
+          // Filtrage des actions du jour (exclut les actions JI)
+          const todays = ACTIONS.filter(a => {
+             const aDate = parseDateSecure(a.dateISO);
+             if(!aDate) return false;
+             if(aDate.toDateString() !== d.toDateString()) return false;
+             if(FILTERed_OUT.has(getTypeKey(a.titre))) return false;
+             if(isJIAction(a)) return false; // Exclure les actions Jeunes Insoumis
+             return true;
+          });
+
+          // Si pas d'action ce jour-là et écran mobile, on peut choisir de masquer ou garder
+          // Ici on garde pour la clarté calendrier
+          
+          const cell = document.createElement("div");
+          cell.className = "day";
+          const dateReadable = d.toLocaleDateString("fr-FR", {weekday:'short', day: 'numeric', month: 'short'});
+          cell.innerHTML = `<div class="d-head">${dateReadable}</div>`;
+
+          todays.sort((a, b) => cleanTime(a.heureTxt).localeCompare(cleanTime(b.heureTxt)));
+
+          if(todays.length === 0) {
+              cell.innerHTML += `<div style="text-align:center; font-size:11px; color:#ccc; padding:10px;">Rien de prévu</div>`;
+          }
+
+          todays.forEach(a => {
+             cntAct++; cntIns += (a.count||0);
+             const lk = document.createElement("a");
+             lk.className = `ev fm-type-${getTypeKey(a.titre)}`;
+
+             // Affichage capacité
+             let inscritsTxt = `👥 ${a.count} inscrit(s)`;
+             let completBadge = '';
+             if (a.capacite && a.capacite > 0) {
+               inscritsTxt = `👥 ${a.count}/${a.capacite} inscrit(s)`;
+               if (a.count >= a.capacite) {
+                 completBadge = '<span class="badge-complet">Complet</span>';
+               }
+             }
+
+             lk.innerHTML = `<span class="ev-t">${a.titre}${completBadge}</span><span class="ev-i">${a.heureTxt} • ${a.lieu}</span><span class="ev-i">${inscritsTxt}</span>`;
+             lk.onclick = () => openModal(a);
+             cell.appendChild(lk);
+          });
+          grid.appendChild(cell);
+       }
+       document.getElementById("s-act").innerText = cntAct;
+       document.getElementById("s-ins").innerText = cntIns;
+    }
+
+    function openModal(e) {
+       CURR = e;
+       document.getElementById("modal").style.display="flex";
+       document.getElementById("m-t").innerText = e.titre;
+       
+       const dateJolie = formatDateFr(e.dateISO);
+       document.getElementById("m-inf").innerHTML = `<strong>📅 ${dateJolie}</strong><br>⏰ ${e.heureTxt}<br>📍 ${e.lieu}`;
+       document.getElementById("m-com").value = e.commentaire||"";
+       
+       // Reset inputs
+       document.getElementById("r-nom").value = "";
+       document.getElementById("r-tel").value = "";
+       const btnR = document.getElementById("r-btn");
+       btnR.innerText = "Valider"; btnR.disabled = false;
+
+       // Show/hide appropriate registration UI
+       const isCollage = (e.titre || "").toLowerCase().includes("collage");
+       const appUrlMatch = (e.commentaire || "").match(/📱 Inscription: (https:\/\/[^\s]+)/);
+       const appUrl = appUrlMatch ? appUrlMatch[1] : "https://carte-collage.vercel.app/sessions";
+
+       if (isCollage) {
+         // Show link to app for collage events
+         document.getElementById("reg-form-standard").style.display = "none";
+         document.getElementById("reg-collage-link").style.display = "block";
+         document.getElementById("collage-app-link").href = appUrl;
+       } else {
+         // Show standard registration form
+         document.getElementById("reg-form-standard").style.display = "block";
+         document.getElementById("reg-collage-link").style.display = "none";
+       }
+
+       // Lien Maps
+       const map = "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(e.lieu||"");
+       document.getElementById("l-map").href = map;
+       
+       // Lien Calendar simple
+       const btnCal = document.getElementById("l-cal");
+       const tStart = e.dateISO.replace(/-/g,'') + 'T' + cleanTime(e.heureTxt).replace(':','') + '00';
+       const tEnd = e.dateISO.replace(/-/g,'') + 'T' + (parseInt(cleanTime(e.heureTxt).substring(0,2))+2) + '0000'; // +2h brute
+       const gUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.titre)}&dates=${tStart}/${tEnd}&details=${encodeURIComponent(e.commentaire||"")}&location=${encodeURIComponent(e.lieu||"")}`;
+       btnCal.href = gUrl;
+
+       refreshList(e);
+    }
+
+    function refreshList(e) {
+       const ls = document.getElementById("m-lst");
+       ls.innerHTML = "";
+       const ps = PARTS.filter(p => String(p.idAction) === String(e.id));
+
+       if(ps.length > 0) {
+          ps.forEach(p => {
+              const row = document.createElement("div");
+              row.className = "item-inscrit";
+              const telDisplay = p.tel ? p.tel : "📞 Ajouter";
+              const telStyle = p.tel ? "color:#666;" : "color:#0369a1; text-decoration:underline;";
+
+              row.innerHTML = `<span>👤 ${p.nom} <span class="tel-edit" style="font-size:11px; cursor:pointer; ${telStyle}">${telDisplay}</span></span><span class="del-btn">×</span>`;
+
+              // Clic sur le téléphone pour modifier
+              row.querySelector(".tel-edit").onclick = (ev) => {
+                  ev.stopPropagation();
+                  const newTel = prompt("Numéro de téléphone pour " + p.nom + " :", p.tel || "");
+                  if(newTel !== null) {
+                      apiCall({op: "update_participant", idAction: e.id, nom: p.nom, tel: newTel}, () => {
+                          p.tel = newTel;
+                          refreshList(e);
+                      });
+                  }
+              };
+
+              row.querySelector(".del-btn").onclick = () => {
+                  if(confirm(`Retirer ${p.nom} ?`)) {
+                      apiCall({op: "delete_participant", idAction: e.id, nom: p.nom}, () => {
+                          PARTS = PARTS.filter(part => !(part.idAction === e.id && part.nom === p.nom));
+                          e.count--; refreshList(e); render();
+                      });
+                  }
+              };
+              ls.appendChild(row);
+          });
+       } else {
+          ls.innerHTML = "<div style='color:#999;font-style:italic;font-size:12px;'>Aucun inscrit.</div>";
+       }
+    }
+
+    // Fonction générique API
+    function apiCall(data, callback) {
+       const fd = new URLSearchParams();
+       fd.append("key", KEY);
+       for(let k in data) fd.append(k, data[k]);
+       
+       fetch(URL_API, {method:"POST", body:fd})
+       .then(r => r.json())
+       .then(res => {
+           if(res.ok) callback(res);
+           else alert("Erreur: " + (res.error || "Inconnue"));
+       })
+       .catch(() => alert("Erreur réseau/connexion"));
+    }
+
+    // ACTIONS BOUTONS
+    document.getElementById("b-sav").onclick = () => {
+       const c = document.getElementById("m-com").value;
+       apiCall({op:"update_action", idAction:CURR.id, titre:CURR.titre, date:CURR.dateISO, heure:CURR.heureTxt, lieu:CURR.lieu, commentaire:c}, () => {
+          CURR.commentaire = c; alert("Note enregistrée");
+       });
+    };
+
+    document.getElementById("r-btn").onclick = () => {
+       const nom = document.getElementById("r-nom").value.trim();
+       const tel = document.getElementById("r-tel").value.trim();
+       if(!nom) return alert("Nom obligatoire");
+
+       const btn = document.getElementById("r-btn");
+       btn.innerText = "..."; btn.disabled = true;
+
+       apiCall({op: "register_participant", idAction: CURR.id, nom: nom, tel: tel}, () => {
+           PARTS.push({idAction: CURR.id, nom: nom, tel: tel});
+           CURR.count = (CURR.count||0) + 1;
+           btn.innerText = "Inscrit !";
+           refreshList(CURR); render();
+           setTimeout(() => {
+             document.getElementById("r-nom").value = "";
+             document.getElementById("r-tel").value = "";
+             btn.innerText = "Valider"; btn.disabled = false;
+           }, 1500);
+       });
+    };
+
+    function closeModal(){ document.getElementById("modal").style.display="none"; }
+    document.getElementById("modal").onclick = (e) => { if(e.target.id=="modal") closeModal(); };
+
+    // CHARGEMENT
+    function loadData() {
+       fetch(URL_API+"?op=militants&key="+encodeURIComponent(KEY))
+       .then(r=>r.json())
+       .then(d=>{
+          ACTIONS = d.actions || [];
+          PARTS = d.participants || [];
+          if(document.getElementById("modal").style.display !== "flex") render();
+       })
+       .catch(e => {
+         document.getElementById("loading").innerText = "Erreur de chargement. Vérifiez votre connexion.";
+       });
+    }
+    
+    loadData();
+  </script>
+</body>
+</html>

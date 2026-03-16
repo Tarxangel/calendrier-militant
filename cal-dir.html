@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Gestion Militante - Direction</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --violet: #6D28D9;
+    --violet-hover: #5b21b6;
+    --rouge:  #E31D1A;
+    --jaune:  #FACC15;
+    --vert:   #22C55E;
+    --bleu:   #2563EB;
+    --rose:   #EC4899;
+    --peche:  #FFDAB9;
+    --marron: #8F635A;
+    --orange: #F97316;
+    --cyan:   #06b6d4; /* AJOUT DU CYAN */
+    --bg-page: #F3F4F6;
+    --bg-card: #FFFFFF;
+    --border: #E5E7EB;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg-page);
+    color: var(--text-main);
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* LAYOUT PRINCIPAL */
+  .main-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Sur écran large : Formulaire à gauche (fixe), Calendrier à droite */
+  @media(min-width: 1000px) {
+    .main-layout {
+      grid-template-columns: 350px 1fr;
+      align-items: start;
+    }
+    .sticky-form {
+      position: sticky;
+      top: 20px;
+    }
+  }
+
+  /* CARTE GENERIQUE */
+  .card {
+    background: var(--bg-card);
+    border-radius: 24px;
+    padding: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border);
+  }
+
+  h2 { font-size: 22px; font-weight: 800; margin: 0 0 20px 0; color: var(--text-main); }
+  label { font-weight: 600; font-size: 14px; margin-bottom: 5px; display: block; }
+  
+  /* INPUTS STYLES */
+  input[type="text"], input[type="date"], input[type="time"], input[type="tel"], select, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #D1D5DB;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+  }
+
+  /* COULEURS ACTIONS */
+  .fm-type-tractage    { background:var(--rouge); color:white; }
+  .fm-type-cafe        { background:var(--vert); color:white; } 
+  .fm-type-phoning     { background:var(--bleu); color:white; }
+  .fm-type-porte       { background:var(--jaune); color:#111827; }
+  .fm-type-reunion     { background:var(--violet); color:white; }
+  .fm-type-event       { background:var(--rose); color:white; } 
+  .fm-type-eventlfi    { background:var(--peche); color:#111827; }
+  .fm-type-info        { background:var(--marron); color:white; }
+  .fm-type-perm        { background:var(--cyan); color:white; }
+  .fm-type-collage     { background:var(--orange); color:white; }
+
+  /* CALENDRIER SPECIFIQUE */
+  .stats { display:flex; justify-content:center; gap:20px; margin:15px 0; font-weight:bold; color:#444; background: #F9FAFB; padding: 10px; border-radius: 12px; }
+  .stats span { color:var(--violet); font-size:1.2em; margin-left:5px; }
+
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:12px; }
+  .legend-item { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; background:#F3F4F6; border-radius:99px; font-weight: 500; }
+  .dot { width:10px; height:10px; border-radius:50%; }
+
+  .month-title {
+      font-size: 1.5em;
+      color: var(--violet);
+      margin: 30px 0 15px 0;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--border);
+      text-transform: capitalize;
+      font-weight: 800;
+  }
+  
+  .month-grid { 
+      display:grid; 
+      grid-template-columns:repeat(7, 1fr); 
+      gap:10px; 
+      margin-bottom: 20px;
+  }
+  @media(max-width:1100px){ .month-grid{grid-template-columns:repeat(4,1fr);} }
+  @media(max-width:768px){ .month-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:480px){ .month-grid{grid-template-columns:1fr;} }
+
+  .day { background:#F9FAFB; border:1px solid var(--border); border-radius:12px; padding:10px; min-height:100px; display: flex; flex-direction: column; gap: 5px; }
+  .day-head { font-weight:bold; font-size:13px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+  
+  .event { 
+    display:block; padding:8px; border-radius:8px; font-size:12px; text-decoration:none; 
+    box-shadow:0 2px 4px rgba(0,0,0,0.05); transition:transform 0.1s, box-shadow 0.1s; cursor:pointer;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .event:hover { transform:translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 2; }
+  .ev-title { font-weight:800; margin-bottom: 2px; }
+  .ev-info { font-size:11px; opacity:0.95; line-height: 1.3; }
+
+  /* MODAL */
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter: blur(2px); display:none; align-items:center; justify-content:center; z-index:999; }
+  .modal { background:#fff; width:90%; max-width:500px; padding:25px; border-radius:20px; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:15px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  
+  /* BOUTONS GENERIQUES */
+  .btn-primary { background:var(--violet); color:#fff; font-weight:700; padding:12px; border-radius:99px; border:none; cursor:pointer; width: 100%; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--violet-hover); }
+
+  .btn { border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.8; }
+  .btn-p { background:var(--violet); color:#fff; }
+  .btn-s { background:#E5E7EB; color:#000; }
+  .btn-d { background:var(--rouge); color:#fff; }
+  .btn-c { background:var(--orange); color:#fff; }
+
+  .links { display:flex; gap:10px; flex-wrap:wrap; }
+  .lnk { flex:1; font-size:12px; padding:10px; border-radius:8px; text-decoration:none; text-align:center; font-weight:bold; cursor:pointer; }
+  .lnk-m { background:#E0F2FE; color:#0369A1; }
+  .lnk-c { background:#F3E8FF; color:#7E22CE; }
+
+  .inscrits-box { background:#F9FAFB; padding:10px; border-radius:8px; border:1px solid var(--border); min-height:60px; max-height:150px; overflow-y:auto; }
+  .item-inscrit { display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:8px 0; color:#111827; font-size:13px; }
+  
+  .reg-box { border-top:1px solid #eee; padding-top:15px; }
+  .reg-inputs { display:flex; gap:5px; margin-bottom:5px; }
+
+  /* Badge Complet */
+  .badge-complet {
+    display: inline-block;
+    background: var(--rouge);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="main-layout">
+  
+  <section class="card sticky-form">
+    <h2>Ajouter une action</h2>
+    
+    <form id="fm-add-action-form" style="display:flex;flex-direction:column;gap:15px;">
+      
+      <div>
+        <label for="fm-type">Type d’action</label>
+        <select id="fm-type" required>
+          <option value="">Choisir...</option>
+          <option value="Tractage">Tractage</option>
+          <option value="Porte à porte">Porte à porte</option>
+          <option value="Collage">Collage</option>
+          <option value="Café pied des tours">Café pied des tours</option>
+          <option value="Phoning">Phoning</option>
+          <option value="Permanence local">Permanence local</option>
+          <option value="Réunion">Réunion (Plénière ou Direction)</option>
+          <option value="Evenement autre">Evenement autre</option>
+          <option value="Événement LFI">Événement LFI</option>
+          <option value="Info">Info</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label for="fm-date">Date</label>
+          <input id="fm-date" type="date" required>
+        </div>
+        <div style="flex:1;">
+          <label for="fm-heure">Heure</label>
+          <input id="fm-heure" type="time" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="fm-lieu">Lieu</label>
+        <input id="fm-lieu" type="text" required placeholder="Ex: Place de la Révolution">
+      </div>
+
+      <div>
+        <label for="fm-capacite">Personnes nécessaires (optionnel)</label>
+        <input id="fm-capacite" type="number" min="1" placeholder="Ex: 5">
+        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Laissez vide si pas de limite.</div>
+      </div>
+
+      <div style="background:#F3F4F6; padding:12px; border-radius:8px; display:flex; align-items:flex-start; gap:10px;">
+        <input type="checkbox" id="fm-visible" checked style="transform:scale(1.2); cursor:pointer; margin-top: 3px; width: auto;">
+        <div>
+          <label for="fm-visible" style="cursor:pointer; margin-bottom: 2px;">Visible sur le calendrier Militant ?</label>
+          <div style="font-size:11px;color:var(--text-muted); line-height: 1.3;">Si décoché, l'action ne sera visible que par la direction (ex: Réunion interne).</div>
+        </div>
+      </div>
+
+      <div>
+        <label for="fm-commentaire">Commentaire interne (optionnel)</label>
+        <textarea id="fm-commentaire" placeholder="Infos logistiques, contacts..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-primary">
+        Ajouter l’action
+      </button>
+      <p id="fm-add-action-status" style="font-size:13px;color:var(--text-muted);margin:0; text-align: center; height: 18px;"></p>
+    </form>
+  </section>
+
+
+  <section class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+       <h2 style="margin:0;">Calendrier Direction</h2>
+       <div style="text-align: right;">
+         <span style="font-size:11px; color:#999; display: block;">Auto-refresh toutes les 30s</span>
+         <button onclick="loadData()" style="background:none; border:none; color:var(--violet); font-size:12px; cursor:pointer; padding:0; text-decoration:underline;">Forcer actualisation</button>
+       </div>
+    </div>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:0;">Vue complète (Actions publiques et privées) - Tri par mois.</p>
+    
+    <div class="stats">
+       <div>Actions : <span id="s-act">0</span></div>
+       <div>Inscrits : <span id="s-ins">0</span></div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center; margin:15px 0; padding:12px; background:#F3F4F6; border-radius:12px; flex-wrap:wrap;">
+       <label style="font-weight:600; font-size:13px; margin:0;">📅 Voir depuis :</label>
+       <input type="date" id="start-date" style="padding:8px; border-radius:6px; border:1px solid #D1D5DB; font-size:14px;">
+       <button onclick="applyStartDate()" class="btn btn-p" style="padding:8px 16px;">Appliquer</button>
+       <button onclick="resetToToday()" class="btn btn-s" style="padding:8px 16px;">Aujourd'hui</button>
+       <span id="date-info" style="font-size:12px; color:var(--text-muted); margin-left:auto;"></span>
+    </div>
+
+    <div class="legend">
+       <div class="legend-item"><span class="dot" style="background:var(--rouge)"></span>Tractage</div>
+       <div class="legend-item"><span class="dot" style="background:var(--jaune)"></span>Porte à porte</div>
+       <div class="legend-item"><span class="dot" style="background:var(--orange)"></span>Collage</div>
+       <div class="legend-item"><span class="dot" style="background:var(--vert)"></span>Café pied des tours</div>
+       <div class="legend-item"><span class="dot" style="background:var(--bleu)"></span>Phoning</div>
+       <div class="legend-item"><span class="dot" style="background:var(--cyan)"></span>Permanence local</div>
+       <div class="legend-item"><span class="dot" style="background:var(--violet)"></span>Réunion</div>
+       <div class="legend-item"><span class="dot" style="background:var(--rose)"></span>Evenement</div>
+       <div class="legend-item"><span class="dot" style="background:var(--peche)"></span>Evénement LFI</div>
+       <div class="legend-item"><span class="dot" style="background:var(--marron)"></span>Info</div>
+       <div class="legend-item" style="background:#fce7f3;"><span style="background:#EC4899;color:white;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">JI</span>Jeunes Insoumis</div>
+    </div>
+
+    <div id="calendar" class="calendar-wrapper">
+       <div style="padding: 40px; text-align: center; color: #999;">Chargement des données...</div>
+    </div>
+  </section>
+
+</div>
+
+
+<div id="modal" class="modal-backdrop">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between; align-items: start;">
+       <h3 id="m-title" style="margin:0; font-size: 18px; color: var(--text-main);"></h3>
+       <button onclick="closeModal()" style="background:none;border:none;font-size:24px; cursor: pointer; line-height: 0.8; color: #999;">×</button>
+    </div>
+    <div id="m-meta" style="font-size:14px;color:#555; background: #F3F4F6; padding: 10px; border-radius: 8px;"></div>
+
+    <div class="links">
+       <a id="l-map" target="_blank" href="#" class="lnk lnk-m">📍 Voir sur Maps</a>
+       <a id="l-cal" target="_blank" href="#" class="lnk lnk-c">📅 Google</a>
+       <a id="l-ics" href="#" class="lnk lnk-c">📅 Apple / Outlook</a>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:150px; background:#F0FDFA; padding:10px; border-radius:8px; border:1px solid #CCFBF1; display:flex; gap:10px; align-items:center;">
+         <input type="checkbox" id="m-visible" style="width: auto;">
+         <label for="m-visible" style="font-size:13px; font-weight:bold; margin:0; cursor: pointer;">Visible militants</label>
+      </div>
+      <div style="flex:1; min-width:150px;">
+         <label style="font-size:12px; margin-bottom:2px;">Personnes nécessaires</label>
+         <input type="number" id="m-capacite" min="1" placeholder="Ex: 5" style="padding:8px;">
+      </div>
+    </div>
+
+    <div>
+        <label style="font-size: 12px; margin-bottom: 2px;">Note interne / Logistique</label>
+        <textarea id="m-com" placeholder="Note interne..." style="width:100%;height:60px;"></textarea>
+    </div>
+    
+    <div class="inscrits-box">
+        <div style="font-size:12px; font-weight:bold; margin-bottom:5px; color: var(--violet);">LISTE DES INSCRITS :</div>
+        <div id="m-list"></div>
+    </div>
+
+    <div class="reg-box">
+       <!-- Registration form for non-collage events -->
+       <div id="reg-form-standard">
+         <div style="font-weight:bold; font-size:13px; margin-bottom:5px; color:var(--text-main);">Ajouter un participant manuellement :</div>
+         <div class="reg-inputs">
+             <input id="r-nom" class="reg-input" type="text" placeholder="Nom">
+             <input id="r-tel" class="reg-input" type="tel" placeholder="Tél (optionnel)">
+         </div>
+         <button id="r-btn" class="btn btn-primary" style="padding: 8px; font-size: 13px;">Inscrire</button>
+       </div>
+       <!-- Link to app for collage events -->
+       <div id="reg-collage-link" style="display:none; text-align:center; padding:15px; background:#FFF7ED; border:1px solid #FDBA74; border-radius:8px;">
+         <div style="font-size:14px; margin-bottom:10px;">📱 Les inscriptions collage se font sur l'app dédiée</div>
+         <a id="collage-app-link" href="#" target="_blank" class="btn btn-primary" style="display:inline-block; background:var(--orange); text-decoration:none;">
+           Ouvrir l'app Collage →
+         </a>
+       </div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:10px; border-top:1px solid #eee; padding-top:15px;">
+       <div style="display:flex; gap:5px; flex-wrap:wrap;">
+         <button id="btn-save" class="btn btn-s">Sauvegarder Note</button>
+         <button id="btn-modif" class="btn btn-s">Modifier tout</button>
+         <button id="btn-copy" class="btn btn-c" title="Copier les infos vers le formulaire d'ajout">📋 Dupliquer</button>
+       </div>
+       <button id="btn-del" class="btn btn-d">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // CONFIGURATION
+  const URL_API = "https://script.google.com/macros/s/AKfycbzsJrZEo-DqTsa2HXu08217Bj6WIcUni8ZUSYvNtwiJSzfA2fStpsIa5DNTBObLeHqKKQ/exec";
+  const KEY = "FM_Besancon_2025_X4h9!";
+  
+  // ETAT GLOBAL
+  let EVENTS = [], PARTS = [], CURR = null;
+  let START_DATE = new Date(); // Date de départ du calendrier
+  START_DATE.setHours(0,0,0,0);
+
+  const TAG_JI = "[JI]"; // Tag pour identifier les actions Jeunes Insoumis
+  function isJIAction(e) {
+    return (e.commentaire || "").includes(TAG_JI);
+  }
+
+  function applyStartDate() {
+    const input = document.getElementById("start-date").value;
+    if (!input) return;
+    START_DATE = new Date(input);
+    START_DATE.setHours(0,0,0,0);
+    updateDateInfo();
+    render();
+  }
+
+  function resetToToday() {
+    START_DATE = new Date();
+    START_DATE.setHours(0,0,0,0);
+    document.getElementById("start-date").value = START_DATE.toISOString().split('T')[0];
+    updateDateInfo();
+    render();
+  }
+
+  function updateDateInfo() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = Math.floor((today - START_DATE) / (1000 * 60 * 60 * 24));
+    const infoEl = document.getElementById("date-info");
+    if (diff > 0) {
+      infoEl.textContent = `⏪ ${diff} jour(s) dans le passé`;
+      infoEl.style.color = "var(--orange)";
+    } else if (diff < 0) {
+      infoEl.textContent = `⏩ ${Math.abs(diff)} jour(s) dans le futur`;
+      infoEl.style.color = "var(--bleu)";
+    } else {
+      infoEl.textContent = "📍 Aujourd'hui";
+      infoEl.style.color = "var(--vert)";
+    }
+  }
+
+  // --- PARTIE 1 : GESTION DU FORMULAIRE D'AJOUT ---
+  const form = document.getElementById("fm-add-action-form");
+  const statusEl = document.getElementById("fm-add-action-status");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusEl.textContent = "Enregistrement en cours...";
+    statusEl.style.color = "#4B5563";
+    
+    // Désactiver le bouton pour éviter double clic
+    const btn = form.querySelector('button[type="submit"]');
+    const originalBtnText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Patientez...";
+
+    const type = document.getElementById("fm-type").value;
+    const isVisible = document.getElementById("fm-visible").checked;
+
+    const capacite = document.getElementById("fm-capacite").value.trim();
+
+    const payload = new URLSearchParams();
+    payload.append("op", "add_action");
+    payload.append("key", KEY);
+    payload.append("titre", type);
+    payload.append("date", document.getElementById("fm-date").value);
+    payload.append("heure", document.getElementById("fm-heure").value);
+    payload.append("lieu", document.getElementById("fm-lieu").value.trim());
+    payload.append("commentaire", document.getElementById("fm-commentaire").value.trim());
+    payload.append("visible", isVisible);
+    if (capacite) payload.append("capacite", capacite);
+
+    try {
+      await fetch(URL_API, { method: "POST", body: payload });
+      
+      statusEl.textContent = "Action ajoutée avec succès !";
+      statusEl.style.color = "#15803D";
+      form.reset();
+      
+      // Reset bouton
+      btn.disabled = false;
+      btn.innerText = originalBtnText;
+
+      // ACTUALISATION INTELLIGENTE (Sans recharger toute la page)
+      loadData(); 
+
+      // Effacer le message après 3s
+      setTimeout(() => { statusEl.textContent = ""; }, 3000);
+
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Erreur lors de l’ajout.";
+      statusEl.style.color = "#B91C1C";
+      btn.disabled = false;
+      btn.innerText = originalBtnText;
+    }
+  });
+
+
+  // --- PARTIE 2 : LOGIQUE CALENDRIER & UTILITAIRES ---
+
+  function getTypeClass(t) {
+    t=(t||"").toLowerCase();
+    if(t.includes("tract")) return "fm-type-tractage";
+    if(t.includes("porte")) return "fm-type-porte";
+    if(t.includes("collage")) return "fm-type-collage";
+    if(t.includes("café") || t.includes("cafe") || t.includes("tours")) return "fm-type-cafe";
+    if(t.includes("phone")) return "fm-type-phoning";
+    if(t.includes("permanence")) return "fm-type-perm";
+    if(t.includes("réunion") || t.includes("reunion")) return "fm-type-reunion";
+    if(t.includes("evenement")) return "fm-type-event";
+    if(t.includes("lfi")) return "fm-type-eventlfi";
+    if(t.includes("info")) return "fm-type-info";
+    return "fm-type-tractage";
+  }
+
+  function post(data) {
+     const fd = new URLSearchParams();
+     for(k in data) fd.append(k, data[k]);
+     return fetch(URL_API, {method:"POST", body:fd});
+  }
+
+  function parseDateSecure(dateStr) {
+     if(!dateStr) return null;
+     if(dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(dateStr);
+     const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+     if(parts) return new Date(`${parts[3]}-${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}`);
+     const tryD = new Date(dateStr);
+     return isNaN(tryD.getTime()) ? null : tryD;
+  }
+
+  function cleanTime(t) {
+    if(!t) return "09:00";
+    t = String(t).toLowerCase().replace("h",":").replace(".",":").trim();
+    if(!t.includes(":")) t += ":00";
+    const parts = t.split(":");
+    return (parts[0]||"09").padStart(2,'0') + ":" + (parts[1]||"00").padStart(2,'0');
+  }
+
+  function getDatesObj(e) {
+     try {
+       const timeStr = cleanTime(e.heureTxt);
+       const dateObj = parseDateSecure(e.dateISO);
+       if(!dateObj) throw new Error("Date invalide");
+       const yyyy = dateObj.getFullYear();
+       const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+       const dd = String(dateObj.getDate()).padStart(2, '0');
+       const isoString = `${yyyy}-${mm}-${dd}T${timeStr}:00`;
+       const dStart = new Date(isoString);
+       if(isNaN(dStart.getTime())) throw new Error("Time invalide");
+       const dEnd = new Date(dStart);
+       dEnd.setHours(dEnd.getHours() + 2);
+       return { start: dStart, end: dEnd };
+     } catch(err) { return null; }
+  }
+
+  function formatIcsLocal(d) {
+     const pad = n => n < 10 ? '0' + n : n;
+     return '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  }
+
+  function downloadICS(e) {
+    const dates = getDatesObj(e);
+    if (!dates) { alert("Erreur date source"); return; }
+    const { start, end } = dates;
+    const strStart = formatIcsLocal(start); const strEnd = formatIcsLocal(end);
+    const icsContent = [
+        "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Direction//FR","BEGIN:VEVENT",
+        `UID:${e.id}-${Date.now()}@direction`, `DTSTAMP:${strStart}Z`,
+        `DTSTART:${strStart}`, `DTEND:${strEnd}`, `SUMMARY:${e.titre}`,
+        `DESCRIPTION:${e.commentaire || ""}`, `LOCATION:${e.lieu || ""}`,
+        "END:VEVENT","END:VCALENDAR"
+    ].join("\r\n");
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none'; a.href = url; a.download = `action_${e.id}.ics`;
+    document.body.appendChild(a); a.click();
+    window.URL.revokeObjectURL(url); document.body.removeChild(a);
+  }
+
+  function formatDateFr(dateStr) {
+     const d = parseDateSecure(dateStr);
+     if(!d) return dateStr;
+     return d.toLocaleDateString("fr-FR", { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  // --- RENDU PAR MOIS AVEC TRI CHRONOLOGIQUE ---
+  function render() {
+    const el = document.getElementById("calendar");
+    el.innerHTML = "";
+
+    let cntAct=0, cntIns=0;
+    const start = new Date(START_DATE); // Utilise la date de départ choisie
+    const days = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+
+    // Mettre à jour l'info de date
+    updateDateInfo();
+    const months = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+    let currentMonthKey = "";
+    let currentGrid = null;
+
+    // On affiche les 200 prochains jours
+    for(let i=0; i<200; i++) {
+       const d = new Date(start); d.setDate(start.getDate()+i);
+       
+       const mIndex = d.getMonth();
+       const y = d.getFullYear();
+       const key = `${mIndex}-${y}`;
+
+       if(key !== currentMonthKey) {
+           currentMonthKey = key;
+           const title = document.createElement("h3");
+           title.className = "month-title";
+           title.innerText = `${months[mIndex]} ${y}`;
+           el.appendChild(title);
+
+           currentGrid = document.createElement("div");
+           currentGrid.className = "month-grid";
+           el.appendChild(currentGrid);
+       }
+
+       // Filtrer les événements du jour
+       let evs = EVENTS.filter(e => {
+          const eD = parseDateSecure(e.dateISO);
+          return eD && eD.toDateString() === d.toDateString();
+       });
+
+       // *** ICI : TRI CHRONOLOGIQUE ***
+       evs.sort((a, b) => {
+           const timeA = cleanTime(a.heureTxt);
+           const timeB = cleanTime(b.heureTxt);
+           return timeA.localeCompare(timeB);
+       });
+
+       const cell = document.createElement("div");
+       cell.className = "day";
+       cell.innerHTML = `<div class="day-head">${days[d.getDay()]} ${d.getDate()}</div>`;
+
+       evs.forEach(e => {
+          cntAct++; cntIns += (e.count || 0);
+          const lk = document.createElement("a");
+          lk.href="#";
+          lk.className = `event ${getTypeClass(e.titre)}`;
+          const lock = e.visible ? "" : "🔒 ";
+          const jiTag = isJIAction(e) ? '<span style="background:#EC4899;color:white;padding:1px 5px;border-radius:4px;font-size:9px;margin-left:4px;">JI</span>' : '';
+
+          // Affichage capacité
+          let inscritsTxt = `👥 ${e.count} inscrit(s)`;
+          let completBadge = '';
+          if (e.capacite && e.capacite > 0) {
+            inscritsTxt = `👥 ${e.count}/${e.capacite} inscrit(s)`;
+            if (e.count >= e.capacite) {
+              completBadge = '<span class="badge-complet">Complet</span>';
+            }
+          }
+
+          lk.innerHTML = `<div class="ev-title">${lock}${e.titre}${jiTag}${completBadge}</div><div class="ev-info fm-txt">${e.heureTxt} • ${e.lieu}</div><div class="ev-info fm-txt">${inscritsTxt}</div>`;
+          lk.onclick = (ex) => { ex.preventDefault(); openModal(e); };
+          cell.appendChild(lk);
+       });
+       
+       if(currentGrid) currentGrid.appendChild(cell);
+    }
+    document.getElementById("s-act").innerText = cntAct;
+    document.getElementById("s-ins").innerText = cntIns;
+  }
+
+  function openModal(e) {
+    CURR = e;
+    document.getElementById("modal").style.display="flex";
+    document.getElementById("m-title").innerText = e.titre;
+    
+    const dateJolie = formatDateFr(e.dateISO);
+    document.getElementById("m-meta").innerHTML = `<strong>📅 ${dateJolie}</strong><br>⏰ ${e.heureTxt}<br>📍 ${e.lieu}`;
+    
+    document.getElementById("m-com").value = e.commentaire || "";
+    document.getElementById("m-visible").checked = e.visible;
+    document.getElementById("m-capacite").value = e.capacite || "";
+    
+    // Reset inputs
+    document.getElementById("r-nom").value = "";
+    document.getElementById("r-tel").value = "";
+    const btnR = document.getElementById("r-btn");
+    btnR.innerText = "Inscrire"; btnR.disabled = false;
+
+    // Show/hide appropriate registration UI
+    const isCollage = (e.titre || "").toLowerCase().includes("collage");
+    const appUrlMatch = (e.commentaire || "").match(/📱 Inscription: (https:\/\/[^\s]+)/);
+    const appUrl = appUrlMatch ? appUrlMatch[1] : "https://carte-collage.vercel.app/sessions";
+
+    if (isCollage) {
+      // Show link to app for collage events
+      document.getElementById("reg-form-standard").style.display = "none";
+      document.getElementById("reg-collage-link").style.display = "block";
+      document.getElementById("collage-app-link").href = appUrl;
+    } else {
+      // Show standard registration form
+      document.getElementById("reg-form-standard").style.display = "block";
+      document.getElementById("reg-collage-link").style.display = "none";
+    }
+
+    // Génération des liens externes
+    try {
+        const map = "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(e.lieu||"");
+        document.getElementById("l-map").href = map;
+        const dates = getDatesObj(e);
+        const btnCal = document.getElementById("l-cal");
+        const btnIcs = document.getElementById("l-ics");
+        if(dates) {
+             const { start, end } = dates;
+             const fmtG = d => d.toISOString().replace(/-|:|\.\d+/g,"");
+             const gUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.titre)}&dates=${fmtG(start)}/${fmtG(end)}&details=${encodeURIComponent(e.commentaire||"")}&location=${encodeURIComponent(e.lieu||"")}`;
+             btnCal.href = gUrl; btnCal.style.opacity = "1"; btnCal.style.pointerEvents = "auto";
+             const newBtn = btnIcs.cloneNode(true);
+             btnIcs.parentNode.replaceChild(newBtn, btnIcs);
+             newBtn.onclick = (evt) => { evt.preventDefault(); downloadICS(e); };
+             newBtn.style.opacity = "1"; newBtn.style.pointerEvents = "auto";
+        } else {
+             btnCal.href = "#"; btnCal.style.opacity = "0.5"; btnCal.style.pointerEvents = "none";
+             btnIcs.style.opacity = "0.5"; btnIcs.style.pointerEvents = "none";
+        }
+    } catch(err) { console.error(err); }
+
+    refreshList(e);
+  }
+
+  function refreshList(e) {
+    const ls = document.getElementById("m-list");
+    const myP = PARTS.filter(p=>p.idAction==e.id);
+    ls.innerHTML = myP.length ? "" : "<span style='color:#999;font-size:12px;font-style:italic;'>Aucun inscrit pour le moment.</span>";
+
+    myP.forEach(p => {
+       const d = document.createElement("div");
+       d.className = "item-inscrit";
+       const telDisplay = p.tel ? p.tel : "Ajouter tél";
+       const telColor = p.tel ? "#777" : "#0369A1";
+       const telDecor = p.tel ? "none" : "underline";
+
+       // Structure plus claire avec des éléments séparés
+       const nameSpan = document.createElement("span");
+       nameSpan.textContent = "👤 " + p.nom + " ";
+
+       const telSpan = document.createElement("span");
+       telSpan.textContent = "(" + telDisplay + ")";
+       telSpan.style.cssText = `font-size:0.9em; cursor:pointer; color:${telColor}; text-decoration:${telDecor};`;
+       telSpan.onclick = function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const newTel = prompt("Numéro de téléphone pour " + p.nom + " :", p.tel || "");
+          if(newTel !== null) {
+             post({op:"update_participant", idAction:e.id, nom:p.nom, tel:newTel, key:KEY})
+             .then(() => {
+                 p.tel = newTel;
+                 refreshList(e);
+             });
+          }
+       };
+
+       const delSpan = document.createElement("span");
+       delSpan.innerHTML = "×";
+       delSpan.title = "Supprimer";
+       delSpan.style.cssText = "color:red; cursor:pointer; font-weight:bold; padding:0 5px;";
+       delSpan.onclick = function() {
+          if(confirm("Retirer " + p.nom + " de l'action ?")) {
+             post({op:"delete_participant", idAction:e.id, nom:p.nom, key:KEY})
+             .then(() => {
+                 d.remove();
+                 loadData();
+             });
+          }
+       };
+
+       d.appendChild(nameSpan);
+       d.appendChild(telSpan);
+       d.appendChild(delSpan);
+       ls.appendChild(d);
+    });
+  }
+  
+  // LISTENERS MODAL
+  document.getElementById("btn-save").onclick = () => {
+     const com = document.getElementById("m-com").value;
+     const vis = document.getElementById("m-visible").checked;
+     const cap = document.getElementById("m-capacite").value;
+     const btn = document.getElementById("btn-save");
+     btn.innerText = "Sauvegarde...";
+     post({op:"update_action", idAction:CURR.id, key:KEY, titre:CURR.titre, date:CURR.dateISO, heure:CURR.heureTxt, lieu:CURR.lieu, commentaire:com, visible:vis, capacite:cap})
+     .then(()=>{
+         btn.innerText = "OK !";
+         setTimeout(() => { btn.innerText = "Sauvegarder Note"; closeModal(); loadData(); }, 800);
+     });
+  };
+
+  document.getElementById("btn-del").onclick = () => {
+     if(confirm("Êtes-vous sûr de vouloir supprimer définitivement cette action ?")) {
+        const btn = document.getElementById("btn-del");
+        btn.innerText = "Suppression...";
+        post({op:"delete_action", idAction:CURR.id, key:KEY})
+        .then(()=>{ closeModal(); loadData(); });
+     }
+  };
+
+  document.getElementById("btn-modif").onclick = () => {
+     const nt = prompt("Titre", CURR.titre)||CURR.titre;
+     const nd = prompt("Date (aaaa-mm-jj)", CURR.dateISO)||CURR.dateISO;
+     const nh = prompt("Heure", CURR.heureTxt)||CURR.heureTxt;
+     const nl = prompt("Lieu", CURR.lieu)||CURR.lieu;
+     const com = document.getElementById("m-com").value;
+     const vis = document.getElementById("m-visible").checked;
+     const cap = document.getElementById("m-capacite").value;
+
+     post({op:"update_action", idAction:CURR.id, key:KEY, titre:nt, date:nd, heure:nh, lieu:nl, commentaire:com, visible:vis, capacite:cap})
+     .then(()=>{ closeModal(); loadData(); });
+  };
+
+  // --- BOUTON DUPLIQUER ---
+  document.getElementById("btn-copy").onclick = () => {
+      // 1. Remplir le formulaire avec les infos de l'action courante
+      document.getElementById("fm-type").value = CURR.titre;
+      document.getElementById("fm-heure").value = cleanTime(CURR.heureTxt);
+      document.getElementById("fm-lieu").value = CURR.lieu;
+      document.getElementById("fm-commentaire").value = CURR.commentaire || "";
+      document.getElementById("fm-visible").checked = CURR.visible;
+      document.getElementById("fm-capacite").value = CURR.capacite || "";
+      // On met la date de l'event
+      document.getElementById("fm-date").value = CURR.dateISO;
+
+      // 2. Fermer la modale
+      closeModal();
+
+      // 3. Scroller vers le formulaire
+      document.querySelector(".sticky-form").scrollIntoView({behavior: "smooth"});
+
+      // 4. Focus sur le champ date
+      setTimeout(() => { 
+        const dateInput = document.getElementById("fm-date");
+        dateInput.focus();
+        
+        const status = document.getElementById("fm-add-action-status");
+        status.textContent = "Copié ! Changez la date et validez.";
+        status.style.color = "var(--orange)";
+      }, 500);
+  };
+
+  document.getElementById("r-btn").onclick = () => {
+     const nom = document.getElementById("r-nom").value.trim();
+     const tel = document.getElementById("r-tel").value.trim();
+     if(!nom) { alert("Nom requis"); return; }
+
+     const btn = document.getElementById("r-btn");
+     btn.innerText = "Ajout..."; btn.disabled = true;
+
+     post({op: "register_participant", key: KEY, idAction: CURR.id, nom: nom, tel: tel})
+     .then(r => r.json())
+     .then(d => {
+        if(d.ok) {
+           btn.innerText = "Ajouté !";
+           PARTS.push({idAction: CURR.id, nom: nom, tel: tel});
+           CURR.count = (CURR.count||0) + 1;
+           refreshList(CURR);
+           loadData();
+
+           document.getElementById("r-nom").value = "";
+           document.getElementById("r-tel").value = "";
+           setTimeout(() => { btn.innerText = "Inscrire"; btn.disabled = false; }, 1000);
+        } else {
+           alert("Erreur"); btn.disabled = false;
+        }
+     });
+  };
+
+  function closeModal() { document.getElementById("modal").style.display="none"; }
+  // Fermer modal si clic en dehors
+  document.getElementById("modal").addEventListener("click", (e) => {
+    if (e.target.id === "modal") closeModal();
+  });
+
+  function loadData() {
+     fetch(URL_API+"?op=direction&key="+encodeURIComponent(KEY))
+     .then(r=>r.json())
+     .then(d=>{
+        EVENTS=d.actions; PARTS=d.participants; 
+        if(document.getElementById("modal").style.display !== "flex") { render(); }
+        else if(CURR) { 
+            document.getElementById("s-act").innerText = EVENTS.length; 
+        }
+     })
+     .catch(err => console.error("Erreur chargement", err));
+  }
+  
+  // Chargement initial
+  loadData();
+  // Initialiser le champ date
+  document.getElementById("start-date").value = START_DATE.toISOString().split('T')[0];
+  updateDateInfo();
+  // Refresh automatique
+  setInterval(loadData, 30000); 
+</script>
+</body>
+</html>
